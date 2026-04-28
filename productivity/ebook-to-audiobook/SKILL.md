@@ -42,25 +42,30 @@ async def tts_one(text: str, out_path: str, voice: str = "zh-CN-YunxiNeural", ra
 
 ## Supported Formats
 
-| Format | Tool | Notes |
-|--------|------|-------|
-| `.pdf` | PyMuPDF (fitz) | Must be text-based (not scanned). Scanned PDFs return 0 words. |
-| `.epub` | EbookLib | Parse `item.get_type() == 9` (EPUBtml) for text items |
-| `.mobi` | `mobi.extract()` | Returns tuple. If path ends in `.epub`, parse with EbookLib |
-| `.azw3` | `mobi.extract()` | Converts to EPUB internally; parse result with EbookLib |
-| `.txt` | Raw read | UTF-8 |
+| Format | Tool | Status |
+|--------|------|--------|
+| `.pdf` | PyMuPDF (fitz) | ✅ 可用 — Must be text-based (not scanned). Scanned PDFs return 0 words. |
+| `.epub` | EbookLib | ✅ 可用 — Parse `item.get_type() == 9` (EPUBtml) for text items |
+| `.mobi` | `mobi.extract()` | ✅ 可用 — Returns path to extracted content (EPUB or HTML) |
+| `.azw3` | `mobi.extract()` + EbookLib | ✅ 可用 — Converts to EPUB internally via `mobi.extract()`; parse result with EbookLib |
+| `.txt` | Raw read | ✅ 可用 — UTF-8 |
 
 ## Critical Discoveries
 
-### AZW3 → EPUB
-`mobi.extract(azw3_path)` returns `(dir, epub_temp_path)`. Parse the `.epub` path with EbookLib, NOT HTML parsing.
+### AZW3 / MOBI → EPUB
+`mobi.extract(path)` returns a **path string** to the extracted content (EPUB or HTML). Parse EPUB results with EbookLib:
 
 ```python
 import mobi
-_, book_html = mobi.extract(azw3_path)
-if book_html.endswith('.epub'):
-    from ebooklib import epub
-    book = epub.read_epub(book_html)  # EbookLib, not html parser
+from ebooklib import epub
+
+extracted_path = mobi.extract(azw3_or_mobi_path)
+if extracted_path.endswith('.epub'):
+    book = epub.read_epub(extracted_path)  # EbookLib
+else:
+    # HTML file — read directly
+    with open(extracted_path, 'r', encoding='utf-8', errors='ignore') as f:
+        content = f.read()
 ```
 
 ### MOBI Inside PDF Extension
@@ -207,6 +212,7 @@ ffmpeg -i large.mp3 -ss 1800 -c copy part2.mp3
 ```bash
 pip install --break-system-packages edge-tts EbookLib mobi
 ```
+> Note: `mobi` package handles both `.mobi` and `.azw3` formats (converts to EPUB internally).
 
 ## Archive Paths
 - Physical: `~/Desktop/hermes/AudioBooks/{title}/`
@@ -214,8 +220,8 @@ pip install --break-system-packages edge-tts EbookLib mobi
 
 ## Key Pitfalls
 - Scanned PDFs: PyMuPDF returns 0 text. No OCR in this pipeline — use Adobe Acrobat Pro OCR.
-- AZW3: Parse as EPUB with EbookLib, not HTML.
-- `mobi.extract()` returns tuple `(dir, path)`.
+- AZW3: `mobi.extract()` returns EPUB path string (not tuple); parse with EbookLib.
+- `mobi.extract()` returns a path string directly (verified 2026-04-28).
 - Edge-tts v7+ Chinese chunk size: **12,000 chars** verified safe (v7.2.8). Old "3800 char" limit is outdated. Split on sentence boundaries.
 - Chinese EPUB from ZIP: Use Python `zipfile`, NOT system `unzip` (encoding issues).
 - Tesseract can't read from `/tmp` on macOS — use home directory instead.
