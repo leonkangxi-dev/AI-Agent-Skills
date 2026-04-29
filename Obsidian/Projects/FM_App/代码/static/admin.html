@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FM Radio Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        .tab-active { border-bottom: 2px solid #007AFF; color: #007AFF; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="loginPage" class="min-h-screen flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 w-96 shadow-lg">
+            <h1 class="text-2xl font-semibold text-center mb-6">管理员登录</h1>
+            <input id="username" type="text" placeholder="用户名" class="w-full p-3 border rounded-xl mb-4">
+            <input id="password" type="password" placeholder="密码" class="w-full p-3 border rounded-xl mb-4">
+            <button onclick="login()" class="w-full bg-blue-500 text-white p-3 rounded-xl hover:bg-blue-600">登录</button>
+            <p id="loginError" class="text-red-500 text-sm mt-2 hidden">用户名或密码错误</p>
+        </div>
+    </div>
+    
+    <div id="adminPage" class="hidden">
+        <nav class="bg-white shadow p-4">
+            <div class="flex justify-between items-center max-w-4xl mx-auto">
+                <h1 class="text-xl font-semibold">FM Radio 管理后台</h1>
+                <button onclick="logout()" class="text-gray-600 hover:text-gray-900">退出</button>
+            </div>
+        </nav>
+        
+        <div class="max-w-4xl mx-auto mt-8 p-4">
+            <div class="flex gap-4 border-b mb-6">
+                <button onclick="showTab('channels')" id="tabChannels" class="pb-2 px-4 tab-active">电台管理</button>
+                <button onclick="showTab('admins')" id="tabAdmins" class="pb-2 px-4 text-gray-600">管理员</button>
+            </div>
+            
+            <!-- 电台管理 -->
+            <div id="channelsTab">
+                <div class="bg-white rounded-xl p-6 shadow">
+                    <h2 class="text-lg font-medium mb-4">添加新电台</h2>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <input id="newName" type="text" placeholder="电台名称" class="p-2 border rounded">
+                        <input id="newUrl" type="text" placeholder="流媒体地址" class="p-2 border rounded col-span-2">
+                    </div>
+                    <button onclick="addChannel()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">添加</button>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow mt-4">
+                    <h2 class="text-lg font-medium mb-4">电台列表</h2>
+                    <div id="channelList" class="space-y-2"></div>
+                </div>
+            </div>
+            
+            <!-- 管理员管理 -->
+            <div id="adminsTab" class="hidden">
+                <div class="bg-white rounded-xl p-6 shadow">
+                    <h2 class="text-lg font-medium mb-4">添加管理员</h2>
+                    <div class="flex gap-4 mb-4">
+                        <input id="newAdminUser" type="text" placeholder="用户名" class="p-2 border rounded">
+                        <input id="newAdminPass" type="password" placeholder="密码" class="p-2 border rounded">
+                        <button onclick="addAdmin()" class="bg-blue-500 text-white px-4 py-2 rounded">添加</button>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow mt-4">
+                    <h2 class="text-lg font-medium mb-4">管理员列表</h2>
+                    <div id="adminList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let token = localStorage.getItem('adminToken');
+        
+        function login() {
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: document.getElementById('username').value, password: document.getElementById('password').value})
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    token = data.token;
+                    localStorage.setItem('adminToken', token);
+                    document.getElementById('loginPage').classList.add('hidden');
+                    document.getElementById('adminPage').classList.remove('hidden');
+                    loadData();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            });
+        }
+        
+        function logout() {
+            localStorage.removeItem('adminToken');
+            location.reload();
+        }
+        
+        function loadData() {
+            loadChannels();
+            loadAdmins();
+        }
+        
+        function loadChannels() {
+            fetch('/api/channels').then(r => r.json()).then(data => {
+                document.getElementById('channelList').innerHTML = data.channels.map(ch => `
+                    <div class="flex justify-between items-center p-3 border rounded">
+                        <div>
+                            <div class="font-medium">${ch.name}</div>
+                            <div class="text-xs text-gray-500">${ch.url}</div>
+                        </div>
+                        <button onclick="deleteChannel(${ch.id})" class="text-red-500 hover:text-red-700">删除</button>
+                    </div>
+                `).join('');
+            });
+        }
+        
+        function addChannel() {
+            fetch('/api/channels', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: document.getElementById('newName').value, url: document.getElementById('newUrl').value})
+            }).then(r => r.json()).then(() => {
+                document.getElementById('newName').value = '';
+                document.getElementById('newUrl').value = '';
+                loadChannels();
+            });
+        }
+        
+        function deleteChannel(id) {
+            if (confirm('确定删除?')) {
+                fetch('/api/channels/' + id, {method: 'DELETE'}).then(() => loadChannels());
+            }
+        }
+        
+        function loadAdmins() {
+            fetch('/api/admin/admins').then(r => r.json()).then(data => {
+                document.getElementById('adminList').innerHTML = data.admins.map(a => `
+                    <div class="flex justify-between items-center p-3 border rounded">
+                        <span>${a.username}</span>
+                        ${a.username !== 'admin' ? `<button onclick="deleteAdmin(${a.id})" class="text-red-500">删除</button>` : ''}
+                    </div>
+                `).join('');
+            });
+        }
+        
+        function addAdmin() {
+            fetch('/api/admin/admins', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: document.getElementById('newAdminUser').value, password: document.getElementById('newAdminPass').value})
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    document.getElementById('newAdminUser').value = '';
+                    document.getElementById('newAdminPass').value = '';
+                    loadAdmins();
+                } else {
+                    alert('用户名已存在');
+                }
+            });
+        }
+        
+        function deleteAdmin(id) {
+            if (confirm('确定删除?')) {
+                fetch('/api/admin/admins/' + id, {method: 'DELETE'}).then(() => loadAdmins());
+            }
+        }
+        
+        function showTab(tab) {
+            document.getElementById('channelsTab').classList.toggle('hidden', tab !== 'channels');
+            document.getElementById('adminsTab').classList.toggle('hidden', tab !== 'admins');
+            document.getElementById('tabChannels').classList.toggle('tab-active', tab === 'channels');
+            document.getElementById('tabAdmins').classList.toggle('tab-active', tab === 'admins');
+        }
+        
+        if (token) {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('adminPage').classList.remove('hidden');
+            loadData();
+        }
+    </script>
+</body>
+</html>

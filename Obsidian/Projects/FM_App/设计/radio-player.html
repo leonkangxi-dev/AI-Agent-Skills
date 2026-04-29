@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络电台 - Apple Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+        }
+        
+        /* 毛玻璃效果 */
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+        }
+        
+        /* 播放按钮 */
+        .play-btn {
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            box-shadow: 0 8px 32px rgba(0, 122, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 40px rgba(0, 122, 255, 0.5);
+        }
+        
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* 进度条 */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 999px;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #007AFF, #5856D6);
+            border-radius: 999px;
+            transition: width 0.1s linear;
+        }
+        
+        /* 图标颜色 */
+        .icon-blue { color: #007AFF; }
+        .icon-green { color: #34C759; }
+        .icon-orange { color: #FF9500; }
+        .icon-red { color: #FF3B30; }
+        .icon-pink { color: #FF2D55; }
+        
+        /* 频道列表 */
+        .channel-item {
+            transition: all 0.2s ease;
+        }
+        
+        .channel-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .channel-item.active {
+            background: rgba(0, 122, 255, 0.2);
+            border-left: 3px solid #007AFF;
+        }
+        
+        /* 动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .playing {
+            animation: pulse 2s infinite;
+        }
+        
+        /* 暗色背景 */
+        .bg-gradient {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+    </style>
+</head>
+<body class="bg-gradient min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- 主播放器卡片 -->
+        <div class="glass rounded-3xl p-6 shadow-2xl">
+            <!-- 顶部信息 -->
+            <div class="flex items-center justify-between mb-6">
+                <div class="text-white/60 text-sm font-medium">网络电台</div>
+                <div class="flex gap-2">
+                    <button class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 专辑封面 -->
+            <div class="relative mb-6">
+                <div class="w-full aspect-square rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                    <svg class="w-24 h-24 text-white/80" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <!-- 实时状态指示 -->
+                <div class="absolute top-3 right-3 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full playing"></span>
+                    <span class="text-xs text-white/60">LIVE</span>
+                </div>
+            </div>
+            
+            <!-- 频道信息 -->
+            <div class="text-center mb-6">
+                <h1 id="channelName" class="text-2xl font-semibold text-white mb-1">选择电台</h1>
+                <p id="channelStatus" class="text-white/50 text-sm">点击播放开始收听</p>
+            </div>
+            
+            <!-- 播放进度条 -->
+            <div class="mb-6">
+                <div class="progress-bar h-1">
+                    <div id="progress" class="progress-fill h-full" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-white/40">
+                    <span id="currentTime">00:00</span>
+                    <span id="duration">LIVE</span>
+                </div>
+            </div>
+            
+            <!-- 播放控制 -->
+            <div class="flex items-center justify-center gap-6 mb-6">
+                <!-- 上一曲 -->
+                <button onclick="prevChannel()" class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                
+                <!-- 播放/暂停 -->
+                <button id="playBtn" onclick="togglePlay()" class="play-btn w-16 h-16 rounded-full flex items-center justify-center text-white">
+                    <svg id="playIcon" class="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pauseIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                
+                <!-- 下一曲 -->
+                <button onclick="nextChannel()" class="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+            </div>
+            
+            <!-- 音量控制 -->
+            <div class="flex items-center gap-4 px-2">
+                <svg class="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <div class="flex-1 progress-bar h-1">
+                    <div id="volumeBar" class="progress-fill h-full" style="width: 70%"></div>
+                </div>
+                <svg class="w-5 h-5 text-white/60" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            </div>
+        </div>
+        
+        <!-- 频道列表 -->
+        <div class="mt-4 glass-dark rounded-2xl p-4 max-h-64 overflow-y-auto">
+            <h2 class="text-white/80 text-sm font-medium mb-3">电台列表</h2>
+            <div id="channelList" class="space-y-1">
+                <!-- 动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载 stations.json
+        let channels = [];
+        let currentIndex = -1;
+        let isPlaying = false;
+        let audio = new Audio();
+        
+        // 频道颜色映射
+        const channelColors = {
+            'CCTV': 'text-blue-400',
+            '凤凰': 'text-pink-400',
+            'RTHK': 'text-green-400',
+            '北京': 'text-orange-400',
+            '上海': 'text-red-400',
+            '广东': 'text-purple-400',
+            '深圳': 'text-yellow-400',
+            'TVBS': 'text-cyan-400'
+        };
+        
+        function getChannelColor(name) {
+            for (const key in channelColors) {
+                if (name.includes(key)) return channelColors[key];
+            }
+            return 'text-white';
+        }
+        
+        // 加载频道
+        fetch('stations.json')
+            .then(r => r.json())
+            .then(data => {
+                channels = data.channels || [];
+                renderChannelList();
+            })
+            .catch(() => {
+                // 使用默认频道
+                channels = [
+                    {name: 'CCTV-1', url: 'https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8'},
+                    {name: '凤凰中文', url: 'https://pluton.liveradio.cn/1001'}
+                ];
+                renderChannelList();
+            });
+        
+        function renderChannelList() {
+            const list = document.getElementById('channelList');
+            list.innerHTML = channels.map((ch, i) => `
+                <div class="channel-item flex items-center justify-between p-3 rounded-xl cursor-pointer" onclick="playChannel(${i})">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        </div>
+                        <span class="${getChannelColor(ch.name)} font-medium">${ch.name}</span>
+                    </div>
+                    <svg class="w-5 h-5 text-white/40" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            `).join('');
+        }
+        
+        function playChannel(index) {
+            currentIndex = index;
+            const ch = channels[index];
+            
+            document.getElementById('channelName').textContent = ch.name;
+            document.getElementById('channelStatus').textContent = '正在连接...';
+            
+            audio.src = ch.url;
+            audio.play().then(() => {
+                isPlaying = true;
+                updatePlayButton();
+                document.getElementById('channelStatus').textContent = '正在播放';
+            }).catch(e => {
+                document.getElementById('channelStatus').textContent = '连接失败: ' + e.message;
+            });
+            
+            // 更新列表高亮
+            document.querySelectorAll('.channel-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+        }
+        
+        function togglePlay() {
+            if (currentIndex === -1 && channels.length > 0) {
+                playChannel(0);
+                return;
+            }
+            
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                document.getElementById('channelStatus').textContent = '已暂停';
+            } else {
+                audio.play();
+                isPlaying = true;
+                document.getElementById('channelStatus').textContent = '正在播放';
+            }
+            updatePlayButton();
+        }
+        
+        function updatePlayButton() {
+            document.getElementById('playIcon').classList.toggle('hidden', isPlaying);
+            document.getElementById('pauseIcon').classList.toggle('hidden', !isPlaying);
+        }
+        
+        function prevChannel() {
+            if (currentIndex > 0) playChannel(currentIndex - 1);
+        }
+        
+        function nextChannel() {
+            if (currentIndex < channels.length - 1) playChannel(currentIndex + 1);
+        }
+        
+        // 音量控制
+        audio.volume = 0.7;
+        document.getElementById('volumeBar').style.width = '70%';
+    </script>
+</body>
+</html>

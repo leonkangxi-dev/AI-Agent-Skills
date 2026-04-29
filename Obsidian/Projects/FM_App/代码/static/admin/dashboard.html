@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FM Radio - 管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .bg-aurora {
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+                linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%);
+            min-height: 100vh;
+        }
+        
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:hover {
+            background: rgba(14, 165, 233, 0.08);
+        }
+        
+        .nav-item.active {
+            background: rgba(14, 165, 233, 0.12);
+            color: #0284c7;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-field {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #0ea5e9;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+        
+        .channel-row {
+            transition: all 0.2s ease;
+        }
+        
+        .channel-row:hover {
+            background: rgba(14, 165, 233, 0.04);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(40px);
+        }
+    </style>
+</head>
+<body class="bg-aurora">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 liquid-glass border-r border-white/50 z-10">
+        <div class="p-6">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-semibold text-gray-900">FM Radio</h1>
+                    <p class="text-xs text-gray-500">管理后台</p>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="space-y-1">
+                <button onclick="showTab('channels')" id="nav-channels" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+                    电台管理
+                </button>
+                <button onclick="showTab('users')" id="nav-users" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    用户管理
+                </button>
+                <button onclick="showTab('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    系统设置
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Bottom -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/50">
+            <div class="flex items-center justify-between">
+                <span id="adminName" class="text-sm text-gray-600">管理员</span>
+                <button onclick="logout()" class="text-sm text-red-500 hover:text-red-600">退出</button>
+            </div>
+            <a href="/" class="block mt-2 text-xs text-gray-400 hover:text-gray-600">← 返回播放器</a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <h2 id="pageTitle" class="text-2xl font-semibold text-gray-900">电台管理</h2>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-500" id="channelCount">共 0 个电台</span>
+                <button onclick="openChannelModal()" class="btn-primary px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    添加电台
+                </button>
+            </div>
+        </div>
+        
+        <!-- Channels Tab -->
+        <div id="tab-channels" class="tab-content active">
+            <div class="liquid-glass rounded-2xl overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-black/5">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">名称</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">分组</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">流媒体地址</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="channelsTable" class="divide-y divide-black/5">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="tab-users" class="tab-content">
+            <div class="flex items-center justify-between mb-6">
+                <span class="text-sm text-gray-500" id="adminCount">共 0 个管理员</span>
+                <button onclick="openUserModal()" class="btn-primary px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    添加管理员
+                </button>
+            </div>
+            <div class="liquid-glass rounded-2xl overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-black/5">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">用户名</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminsTable" class="divide-y divide-black/5">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Settings Tab -->
+        <div id="tab-settings" class="tab-content">
+            <div class="liquid-glass rounded-2xl p-6 max-w-2xl">
+                <h3 class="text-lg font-medium text-gray-900 mb-6">系统信息</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between py-3 border-b border-black/5">
+                        <span class="text-gray-600">应用名称</span>
+                        <span class="text-gray-900">FM Radio</span>
+                    </div>
+                    <div class="flex justify-between py-3 border-b border-black/5">
+                        <span class="text-gray-600">版本</span>
+                        <span class="text-gray-900">v2.0.0</span>
+                    </div>
+                    <div class="flex justify-between py-3 border-b border-black/5">
+                        <span class="text-gray-600">数据库</span>
+                        <span class="text-gray-900">SQLite</span>
+                    </div>
+                    <div class="flex justify-between py-3">
+                        <span class="text-gray-600">默认端口</span>
+                        <span class="text-gray-900">5002</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Channel Modal -->
+    <div id="channelModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-2xl w-full max-w-md p-6">
+            <h3 id="channelModalTitle" class="text-lg font-semibold text-gray-900 mb-6">添加电台</h3>
+            <form id="channelForm" class="space-y-4">
+                <input type="hidden" id="channelId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">电台名称</label>
+                    <input type="text" id="channelName" class="input-field w-full px-4 py-2.5 rounded-lg" placeholder="如: CCTV-1" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">分组</label>
+                    <input type="text" id="channelGroup" class="input-field w-full px-4 py-2.5 rounded-lg" placeholder="如: CCTV" value="General">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">流媒体地址</label>
+                    <input type="url" id="channelUrl" class="input-field w-full px-4 py-2.5 rounded-lg" placeholder="https://..." required>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeChannelModal()" class="flex-1 btn-secondary py-2.5 rounded-lg text-gray-700 font-medium">取消</button>
+                    <button type="submit" class="flex-1 btn-primary py-2.5 rounded-lg text-white font-medium">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- User Modal -->
+    <div id="userModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="modal-content rounded-2xl w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">添加管理员</h3>
+            <form id="userForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                    <input type="text" id="newUsername" class="input-field w-full px-4 py-2.5 rounded-lg" placeholder="输入用户名" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                    <input type="password" id="newPassword" class="input-field w-full px-4 py-2.5 rounded-lg" placeholder="输入密码" required>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeUserModal()" class="flex-1 btn-secondary py-2.5 rounded-lg text-gray-700 font-medium">取消</button>
+                    <button type="submit" class="flex-1 btn-primary py-2.5 rounded-lg text-white font-medium">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check auth
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = '/admin/';
+        }
+        
+        let channels = [];
+        let admins = [];
+        
+        // Load data
+        async function loadData() {
+            await Promise.all([loadChannels(), loadAdmins()]);
+        }
+        
+        async function loadChannels() {
+            try {
+                const response = await fetch('/api/channels');
+                const data = await response.json();
+                channels = data.channels || [];
+                renderChannels();
+                document.getElementById('channelCount').textContent = `共 ${channels.length} 个电台`;
+            } catch (error) {
+                console.error('Failed to load channels:', error);
+            }
+        }
+        
+        async function loadAdmins() {
+            try {
+                const response = await fetch('/api/admin/admins');
+                const data = await response.json();
+                admins = data.admins || [];
+                renderAdmins();
+                document.getElementById('adminCount').textContent = `共 ${admins.length} 个管理员`;
+            } catch (error) {
+                console.error('Failed to load admins:', error);
+            }
+        }
+        
+        function renderChannels() {
+            const tbody = document.getElementById('channelsTable');
+            if (!channels.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">暂无电台</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = channels.map(ch => `
+                <tr class="channel-row">
+                    <td class="px-6 py-4 text-sm text-gray-600">${ch.id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900">${ch.name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${ch.group_name || 'General'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-xs">${ch.url}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="editChannel(${ch.id})" class="text-sky-600 hover:text-sky-700 text-sm mr-3">编辑</button>
+                        <button onclick="deleteChannel(${ch.id})" class="text-red-500 hover:text-red-600 text-sm">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function renderAdmins() {
+            const tbody = document.getElementById('adminsTable');
+            if (!admins.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500">暂无管理员</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = admins.map(admin => `
+                <tr class="channel-row">
+                    <td class="px-6 py-4 text-sm text-gray-600">${admin.id}</td>
+                    <td class="px-6 py-4 font-medium text-gray-900">${admin.username}</td>
+                    <td class="px-6 py-4 text-right">
+                        ${admin.username !== 'admin' ? 
+                            `<button onclick="deleteAdmin(${admin.id})" class="text-red-500 hover:text-red-600 text-sm">删除</button>` :
+                            '<span class="text-gray-400 text-sm">默认账号</span>'
+                        }
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Tab navigation
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            
+            const titles = {
+                'channels': '电台管理',
+                'users': '用户管理',
+                'settings': '系统设置'
+            };
+            document.getElementById('pageTitle').textContent = titles[tab];
+        }
+        
+        // Channel Modal
+        function openChannelModal(channelId = null) {
+            document.getElementById('channelModalTitle').textContent = channelId ? '编辑电台' : '添加电台';
+            document.getElementById('channelForm').reset();
+            document.getElementById('channelId').value = channelId || '';
+            
+            if (channelId) {
+                const ch = channels.find(c => c.id === channelId);
+                if (ch) {
+                    document.getElementById('channelName').value = ch.name;
+                    document.getElementById('channelGroup').value = ch.group_name || 'General';
+                    document.getElementById('channelUrl').value = ch.url;
+                }
+            }
+            
+            document.getElementById('channelModal').classList.remove('hidden');
+        }
+        
+        function closeChannelModal() {
+            document.getElementById('channelModal').classList.add('hidden');
+        }
+        
+        document.getElementById('channelForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const channelId = document.getElementById('channelId').value;
+            const data = {
+                name: document.getElementById('channelName').value,
+                group_name: document.getElementById('channelGroup').value,
+                url: document.getElementById('channelUrl').value
+            };
+            
+            try {
+                const url = channelId ? `/api/channels/${channelId}` : '/api/channels';
+                const method = channelId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    closeChannelModal();
+                    loadChannels();
+                } else {
+                    alert('保存失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('网络错误');
+            }
+        });
+        
+        function editChannel(id) {
+            openChannelModal(id);
+        }
+        
+        async function deleteChannel(id) {
+            if (!confirm('确定要删除这个电台吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/channels/${id}`, {method: 'DELETE'});
+                if (response.ok) {
+                    loadChannels();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+        
+        // User Modal
+        function openUserModal() {
+            document.getElementById('userForm').reset();
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+        
+        function closeUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+        
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                username: document.getElementById('newUsername').value,
+                password: document.getElementById('newPassword').value
+            };
+            
+            try {
+                const response = await fetch('/api/admin/admins', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    closeUserModal();
+                    loadAdmins();
+                } else {
+                    alert('添加失败，用户名可能已存在');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        });
+        
+        async function deleteAdmin(id) {
+            if (!confirm('确定要删除这个管理员吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/admins/${id}`, {method: 'DELETE'});
+                if (response.ok) {
+                    loadAdmins();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+        
+        // Logout
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/';
+        }
+        
+        // Close modals on outside click
+        document.getElementById('channelModal').addEventListener('click', function(e) {
+            if (e.target === this) closeChannelModal();
+        });
+        document.getElementById('userModal').addEventListener('click', function(e) {
+            if (e.target === this) closeUserModal();
+        });
+        
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
