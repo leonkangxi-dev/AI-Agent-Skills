@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HA 信息推送</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .container { text-align: center; padding: 40px; }
+    h1 {
+      font-size: 3em; margin-bottom: 20px;
+      background: linear-gradient(90deg, #00d4ff, #7c3aed);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    p { font-size: 1.2em; color: #94a3b8; margin-bottom: 30px; }
+    .loading { font-size: 1.5em; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HA 信息推送</h1>
+    <p>Hermes Agent 自动化内容平台</p>
+    <div class="loading">⏳ 内容加载中...</div>
+  </div>
+</body>
+</html>
